@@ -14,7 +14,10 @@ def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def write_evaluation_results(file_path, model_name, y_true, y_pred):
+def write_evaluation_results(file_path, model_name, filename_specification, y_true, y_pred):
+    if not file_path.endswith(".txt"):
+        raise ValueError("Invalid file_path. Must end with '.txt'.")
+    file_path = file_path.replace('.txt', f'_{filename_specification}.txt')
     ensure_directory_exists(os.path.dirname(file_path))
     with open(file_path, 'w') as file:
         file.write(f"{model_name} Model:\n")
@@ -24,37 +27,43 @@ def write_evaluation_results(file_path, model_name, y_true, y_pred):
         file.write("Classification Report:\n")
         file.write(classification_report_text)
     print(f"{model_name} Model evaluation results saved to '{file_path}'")
-def train_tfidf_model(X_train_tfidf, y_train, X_test_tfidf, y_test, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_tfidf.txt"):
+def train_tfidf_model(X_train_tfidf, y_train, X_test_tfidf, y_test, preprocessed_filename_specification, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_tfidf.txt"):
     model_tfidf = LogisticRegression()
     model_tfidf.fit(X_train_tfidf, y_train)
     
     y_pred_tfidf = model_tfidf.predict(X_test_tfidf)
     if save_evaluations:
-        write_evaluation_results(eval_file_path, 'TF-IDF', y_test, y_pred_tfidf)
+        write_evaluation_results(eval_file_path, 'TF-IDF', preprocessed_filename_specification, y_test, y_pred_tfidf)
 
-def train_transformers_model(X_train_transformers_std, y_train, X_test_transformers_std, y_test, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_transformers.txt"):
+def train_transformers_model(X_train_transformers_std, y_train, X_test_transformers_std, y_test, preprocessed_filename_specification, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_transformers.txt"):
     model_transformers = LogisticRegression()
     model_transformers.fit(X_train_transformers_std, y_train)
     
     y_pred_transformers = model_transformers.predict(X_test_transformers_std)
     
     if save_evaluations:
-        write_evaluation_results(eval_file_path, 'Transformers', y_test, y_pred_transformers)
+        write_evaluation_results(eval_file_path, 'Transformers', preprocessed_filename_specification, y_test, y_pred_transformers)
 
-def train_word2vec_model(X_train_word2vec_std, y_train, X_test_word2vec_std, y_test, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_word2vec.txt"):
+def train_word2vec_model(X_train_word2vec_std, y_train, X_test_word2vec_std, y_test, preprocessed_filename_specification, save_evaluations = True, eval_file_path="../tests_tmp/evaluation_results_word2vec.txt"):
     model_word2vec = LogisticRegression()
     model_word2vec.fit(X_train_word2vec_std, y_train)
     
     y_pred_word2vec = model_word2vec.predict(X_test_word2vec_std)
     
     if save_evaluations:
-        write_evaluation_results(eval_file_path, 'Word2Vec', y_test, y_pred_word2vec)
+        write_evaluation_results(eval_file_path, 'Word2Vec', preprocessed_filename_specification, y_test, y_pred_word2vec)
 
 def main():
     filename = '../data/Womens Clothing E-Commerce Reviews.csv'
 
-    df = read_and_prepare_data(filename)
-    text_column = "processed_text"
+    preprocess_text=False
+    df = read_and_prepare_data(filename, preprocess=preprocess_text)
+    if preprocess_text==True:
+        text_column = "processed_text"
+        filename_specification = "preprocessed"
+    else:
+        text_column = "review_text"
+        filename_specification = "unpreprocessed"
 
     # Split the data into training and testing sets
     train_df, test_df = train_test_split(df.head(100), test_size=0.2, random_state=42)
@@ -91,8 +100,8 @@ def main():
 
     # Train and evaluate models
     #evaluation_results_directory = '/test_results/'
-    train_tfidf_model(X_train_tfidf, train_df['recommended_ind'], X_test_tfidf, test_df['recommended_ind'])#, evaluation_results_directory)
-    train_transformers_model(X_train_transformers_std, train_df['recommended_ind'], X_test_transformers_std, test_df['recommended_ind'])#, evaluation_results_directory)
+    train_tfidf_model(X_train_tfidf, train_df['recommended_ind'], X_test_tfidf, test_df['recommended_ind'], filename_specification)#, evaluation_results_directory)
+    train_transformers_model(X_train_transformers_std, train_df['recommended_ind'], X_test_transformers_std, test_df['recommended_ind'], filename_specification)#, evaluation_results_directory)
 
     # Word2Vec
     tokenized_sentences_train = train_df['review_text'].apply(lambda x: str(x).split())
@@ -109,7 +118,7 @@ def main():
     X_test_word2vec_std = scaler.transform(X_test_word2vec_std)
 
     # Train and evaluate Word2Vec model
-    train_word2vec_model(X_train_word2vec_std, train_df['recommended_ind'], X_test_word2vec_std, test_df['recommended_ind'])#, evaluation_results_directory)
+    train_word2vec_model(X_train_word2vec_std, train_df['recommended_ind'], X_test_word2vec_std, test_df['recommended_ind'], filename_specification)#, evaluation_results_directory)
 
 if __name__ == "__main__":
     main()

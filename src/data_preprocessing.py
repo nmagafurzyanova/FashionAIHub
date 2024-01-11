@@ -38,7 +38,7 @@ def preprocessing(text):
     return text
 
 
-def read_and_prepare_data(filename):
+def read_and_prepare_data(filename, preprocess = True):
 
     df = read_data(filename=filename)
     df = make_pythonic_column_names(df)
@@ -46,7 +46,8 @@ def read_and_prepare_data(filename):
     df = df.dropna(subset=['title', 'review_text'])
     df = df.drop_duplicates()
 
-    df["processed_text"] = df["review_text"].apply(preprocessing)
+    if preprocess:
+        df["processed_text"] = df["review_text"].apply(preprocessing)
 
     return df
 

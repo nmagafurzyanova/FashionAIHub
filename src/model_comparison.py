@@ -7,11 +7,10 @@ from utils import write_evaluation_results
 from data_preprocessing import read_and_prepare_data
 from prepare_embeddings import prepare_tfidf_embeddings, prepare_transformers_embeddings, prepare_word2vec_embeddings
 from loguru import logger
-
-from sklearn.metrics import accuracy_score, classification_report
+import numpy as np
 
 filename = '../data/Womens Clothing E-Commerce Reviews.csv'
-preprocess_text = False
+preprocess_text = True
 
 if preprocess_text==True:
     text_column = "processed_text"
@@ -21,15 +20,18 @@ else:
     filename_specification = "unpreprocessed"
 
 df = read_and_prepare_data(filename, preprocess=preprocess_text)
-df = df.head(100)
 
 train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
 logger.info("Preparing the TF-IDF vectors.")
 X_train_tfidf, X_test_tfidf = prepare_tfidf_embeddings(train_df, test_df, text_column)
 
-logger.info("Preparing the Transformers vectors.")
-X_train_transformers_std, X_test_transformers_std = prepare_transformers_embeddings(train_df, test_df, text_column)
+#logger.info("Preparing the Transformers vectors.")
+#X_train_transformers_std, X_test_transformers_std = prepare_transformers_embeddings(train_df, test_df, text_column)
+
+logger.info("Reading the Transformers vectors.")
+X_train_transformers = np.load('../data/X_train_transformers.npy')
+X_test_transformers = np.load('../data/X_test_transformers.npy')
 
 logger.info("Preparing the Word2Vec vectors.")
 X_train_word2vec_std, X_test_word2vec_std = prepare_word2vec_embeddings(train_df, test_df, text_column)
@@ -73,4 +75,4 @@ analyze_models(models, X_train_tfidf, X_test_tfidf, train_df["recommended_ind"],
 analyze_models(models, X_train_word2vec_std, X_test_word2vec_std, train_df["recommended_ind"], test_df["recommended_ind"], output_file_path_word2vec)
 
 # Analizza modelli per Transformers
-analyze_models(models, X_train_transformers_std, X_test_transformers_std, train_df["recommended_ind"], test_df["recommended_ind"], output_file_path_transformers)
+analyze_models(models, X_train_transformers, X_test_transformers, train_df["recommended_ind"], test_df["recommended_ind"], output_file_path_transformers)
